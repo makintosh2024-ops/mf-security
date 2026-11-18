@@ -1,0 +1,1548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>M&amp;F Security — Cognitive &amp; Frequency Defense</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Plus+Jakarta+Sans:wght@500;600;700&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      /* Благородная редакционная палитра без дешёвого неона */
+      --bg: #0c0c0d;
+      --bg-elevated: #141416;
+      --bg-card: #18181b;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(255, 255, 255, 0.2);
+      --text-primary: #f3f3f1;
+      --text-secondary: #98989f;
+      --text-tertiary: #5e5e66;
+      --accent: #c92a34; /* Спокойный глубокий красный (в духе Leica / Swiss Design) */
+      --accent-hover: #df343f;
+      --font-display: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      background-color: var(--bg);
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text-primary);
+      min-height: 100vh;
+      line-height: 1.6;
+      overflow-x: hidden;
+    }
+
+    /* ================= ВЕРХНЯЯ ПАНЕЛЬ ================= */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 76px;
+      background: rgba(12, 12, 13, 0.86);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 40px;
+      z-index: 1000;
+    }
+
+    .header-left {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    /* Кнопка 3 полоски слева */
+    .menu-trigger {
+      width: 40px;
+      height: 40px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
+      transition: border-color 0.2s ease, background-color 0.2s ease;
+    }
+
+    .menu-trigger:hover {
+      border-color: var(--border-hover);
+      background-color: var(--bg-elevated);
+    }
+
+    .menu-trigger span {
+      display: block;
+      width: 18px;
+      height: 1.5px;
+      background-color: var(--text-primary);
+      transition: transform 0.25s ease, opacity 0.2s ease;
+    }
+
+    .menu-trigger.active span:nth-child(1) {
+      transform: translateY(6.5px) rotate(45deg);
+    }
+    .menu-trigger.active span:nth-child(2) {
+      opacity: 0;
+    }
+    .menu-trigger.active span:nth-child(3) {
+      transform: translateY(-6.5px) rotate(-45deg);
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .logo-mark {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--accent);
+    }
+
+    .logo-text {
+      font-family: var(--font-display);
+      font-weight: 700;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+      color: var(--text-primary);
+    }
+
+    .header-right {
+      font-size: 0.8rem;
+      color: var(--text-secondary);
+      letter-spacing: 0.02em;
+    }
+
+    /* ================= ВЫЕЗЖАЮЩЕЕ МЕНЮ СЛЕВА ================= */
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.6);
+      backdrop-filter: blur(4px);
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.25s ease, visibility 0.25s ease;
+      z-index: 998;
+    }
+
+    .overlay.open {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .drawer {
+      position: fixed;
+      top: 76px;
+      left: 0;
+      bottom: 0;
+      width: 320px;
+      max-width: 85vw;
+      background: var(--bg-elevated);
+      border-right: 1px solid var(--border);
+      padding: 40px 28px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transform: translateX(-100%);
+      transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+      z-index: 999;
+    }
+
+    .drawer.open {
+      transform: translateX(0);
+    }
+
+    .drawer-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-tertiary);
+      margin-bottom: 20px;
+      padding-left: 12px;
+    }
+
+    .nav-menu {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .nav-link {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      width: 100%;
+      padding: 13px 14px;
+      background: transparent;
+      border: none;
+      border-radius: 8px;
+      color: var(--text-secondary);
+      font-family: var(--font-display);
+      font-size: 0.98rem;
+      font-weight: 500;
+      text-align: left;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .nav-link:hover {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .nav-link.active {
+      color: var(--text-primary);
+      background: rgba(255, 255, 255, 0.07);
+    }
+
+    .nav-link.active .nav-indicator {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background-color: var(--accent);
+    }
+
+    .drawer-meta {
+      border-top: 1px solid var(--border);
+      padding-top: 20px;
+      font-size: 0.78rem;
+      color: var(--text-tertiary);
+      line-height: 1.6;
+    }
+
+    /* ================= КОНТЕЙНЕР СТРАНИЦ ================= */
+    .container {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 132px 40px 100px;
+    }
+
+    .page {
+      display: none;
+      animation: pageIn 0.35s ease;
+    }
+
+    .page.active {
+      display: block;
+    }
+
+    @keyframes pageIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Типографика разделов */
+    .eyebrow {
+      display: inline-block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.14em;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+
+    h1, h2, h3 {
+      font-family: var(--font-display);
+      font-weight: 600;
+      letter-spacing: -0.025em;
+      color: var(--text-primary);
+    }
+
+    .page-title {
+      font-size: clamp(2.2rem, 4vw, 3.2rem);
+      line-height: 1.1;
+      margin-bottom: 16px;
+    }
+
+    .page-lead {
+      font-size: 1.05rem;
+      color: var(--text-secondary);
+      max-width: 600px;
+      margin-bottom: 56px;
+      font-weight: 400;
+    }
+
+    /* ================= СТИЛЬНЫЕ СЛОТЫ ДЛЯ ФОТО ================= */
+    .photo-box {
+      position: relative;
+      width: 100%;
+      background-color: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Подпись-инструкция внутри пустой рамки */
+    .photo-box::before {
+      content: attr(data-label);
+      position: absolute;
+      inset: 16px;
+      border: 1px dashed rgba(255, 255, 255, 0.14);
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 20px;
+      font-size: 0.78rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .photo-box img {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    /* Если src пустой, скрываем системную иконку битого файла */
+    .photo-box img[src=""] {
+      opacity: 0;
+    }
+
+    /* ================= КНОПКИ ================= */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 14px 26px;
+      border-radius: 8px;
+      font-family: var(--font-display);
+      font-size: 0.92rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      border: none;
+    }
+
+    .btn-red {
+      background-color: var(--accent);
+      color: #ffffff;
+    }
+
+    .btn-red:hover {
+      background-color: var(--accent-hover);
+    }
+
+    .btn-outline {
+      background-color: transparent;
+      color: var(--text-primary);
+      border: 1px solid var(--border-hover);
+    }
+
+    .btn-outline:hover {
+      background-color: rgba(255, 255, 255, 0.05);
+    }
+
+    /* ================= 1. ГЛАВНАЯ СТРАНИЦА ================= */
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 56px;
+      align-items: center;
+      padding-bottom: 72px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .hero h1 {
+      font-size: clamp(2.6rem, 4.8vw, 4.1rem);
+      line-height: 1.06;
+      margin-bottom: 22px;
+    }
+
+    .hero p {
+      font-size: 1.08rem;
+      color: var(--text-secondary);
+      margin-bottom: 34px;
+      max-width: 500px;
+    }
+
+    .hero-buttons {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+    }
+
+    .hero-photo {
+      height: 440px;
+    }
+
+    .metrics-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      padding: 56px 0;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .metric-item h3 {
+      font-size: 2.5rem;
+      margin-bottom: 6px;
+    }
+
+    .metric-item h3 span {
+      color: var(--accent);
+    }
+
+    .metric-item p {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+    }
+
+    .pillars {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 28px;
+      padding-top: 56px;
+    }
+
+    .pillar {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 32px;
+    }
+
+    .pillar-num {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+      margin-bottom: 16px;
+      display: block;
+    }
+
+    .pillar h3 {
+      font-size: 1.2rem;
+      margin-bottom: 10px;
+    }
+
+    .pillar p {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+    }
+
+    /* ================= 2. МОДЕЛИ (10 ШАПОЧЕК) ================= */
+    .products-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(330px, 1fr));
+      gap: 24px;
+    }
+
+    .product-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: border-color 0.2s ease;
+    }
+
+    .product-card:hover {
+      border-color: var(--border-hover);
+    }
+
+    .product-card.featured {
+      border-color: rgba(201, 42, 52, 0.55);
+    }
+
+    .product-photo {
+      height: 220px;
+      margin-bottom: 22px;
+    }
+
+    .product-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 8px;
+    }
+
+    .product-top h3 {
+      font-size: 1.25rem;
+    }
+
+    .price {
+      font-family: var(--font-display);
+      font-weight: 600;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+    }
+
+    .tag {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      background: rgba(255, 255, 255, 0.05);
+      padding: 4px 10px;
+      border-radius: 6px;
+      margin-bottom: 14px;
+    }
+
+    .product-card.featured .tag {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    .product-desc {
+      font-size: 0.92rem;
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+    }
+
+    .specs-list {
+      list-style: none;
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      font-size: 0.84rem;
+      color: var(--text-secondary);
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .specs-list li {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .specs-list li::before {
+      content: "";
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      flex-shrink: 0;
+    }
+
+    /* ================= 3. ИСТОРИЯ КОМПАНИИ (ТАЙМЛАЙН) ================= */
+    .timeline-list {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      border-left: 1px solid var(--border);
+      padding-left: 36px;
+      margin-left: 8px;
+    }
+
+    .timeline-row {
+      position: relative;
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 28px;
+      display: grid;
+      grid-template-columns: 1.25fr 0.75fr;
+      gap: 32px;
+      align-items: center;
+    }
+
+    .timeline-row::before {
+      content: "";
+      position: absolute;
+      left: -41px;
+      top: 36px;
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .year-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.06em;
+      margin-bottom: 6px;
+    }
+
+    .timeline-row h3 {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+    }
+
+    .timeline-row p {
+      font-size: 0.94rem;
+      color: var(--text-secondary);
+    }
+
+    .timeline-photo {
+      height: 185px;
+    }
+
+    /* ================= 4. БУДУЩИЕ ПАРТНЁРЫ ================= */
+    .partners-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .partner-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .partner-head {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+
+    .partner-photo {
+      width: 88px;
+      height: 88px;
+      flex-shrink: 0;
+    }
+
+    .partner-note {
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 4px;
+    }
+
+    .partner-box h3 {
+      font-size: 1.25rem;
+    }
+
+    .partner-box p {
+      font-size: 0.94rem;
+      color: var(--text-secondary);
+    }
+
+    /* ================= 5. БИОГРАФИИ ДИРЕКТОРОВ ================= */
+    .founders-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 32px;
+    }
+
+    .founder-card {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .founder-photo {
+      height: 340px;
+    }
+
+    .founder-role {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      margin-bottom: 6px;
+    }
+
+    .founder-card h3 {
+      font-size: 1.65rem;
+      margin-bottom: 4px;
+    }
+
+    .founder-dob {
+      font-size: 0.85rem;
+      color: var(--text-tertiary);
+      margin-bottom: 16px;
+    }
+
+    .founder-text {
+      font-size: 0.96rem;
+      color: var(--text-secondary);
+      line-height: 1.7;
+    }
+
+    /* ================= 6. ИНВЕСТИЦИИ ================= */
+    .invest-layout {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 28px;
+    }
+
+    .invest-panel {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 36px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    .big-return {
+      font-family: var(--font-display);
+      font-size: clamp(3rem, 5vw, 4.5rem);
+      font-weight: 700;
+      color: var(--text-primary);
+      line-height: 1;
+      margin: 16px 0;
+    }
+
+    .big-return span {
+      color: var(--accent);
+    }
+
+    .chart-card {
+      margin-top: 28px;
+      padding: 20px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+    }
+
+    .pay-methods {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin: 24px 0 32px;
+    }
+
+    .pay-method {
+      padding: 18px 20px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+
+    .pay-method h4 {
+      font-family: var(--font-display);
+      font-size: 1rem;
+      margin-bottom: 4px;
+      color: var(--text-primary);
+    }
+
+    .pay-method p {
+      font-size: 0.88rem;
+      color: var(--text-secondary);
+    }
+
+    /* Модальное окно */
+    .modal-bg {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.78);
+      backdrop-filter: blur(6px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 2000;
+    }
+
+    .modal-bg.open {
+      display: flex;
+    }
+
+    .modal-box {
+      background: var(--bg-elevated);
+      border: 1px solid var(--border-hover);
+      border-radius: 16px;
+      max-width: 440px;
+      width: 100%;
+      padding: 36px;
+      position: relative;
+    }
+
+    .modal-close {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      width: 32px;
+      height: 32px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      color: var(--text-secondary);
+      cursor: pointer;
+    }
+
+    /* ================= ФУТЕР ================= */
+    .footer {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 32px 40px 48px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      font-size: 0.82rem;
+      color: var(--text-tertiary);
+    }
+
+    @media (max-width: 900px) {
+      .header { padding: 0 20px; }
+      .container { padding: 112px 20px 80px; }
+      .hero, .metrics-row, .pillars, .timeline-row, .partners-grid, .founders-grid, .invest-layout {
+        grid-template-columns: 1fr;
+      }
+      .header-right { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ================= ШАПКА САЙТА ================= -->
+  <header class="header">
+    <div class="header-left">
+      <button class="menu-trigger" id="menuBtn" aria-label="Menu">
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
+      <div class="logo" onclick="openPage('home')">
+        <span class="logo-mark"></span>
+        <span class="logo-text">M&amp;F Security</span>
+      </div>
+    </div>
+
+    <div class="header-right">
+      Established November 13, 2026
+    </div>
+  </header>
+
+  <!-- ================= ВЫЕЗЖАЮЩЕЕ МЕНЮ СЛЕВА ================= -->
+  <div class="overlay" id="menuOverlay"></div>
+  <aside class="drawer" id="sideMenu">
+    <div>
+      <div class="drawer-title">Navigation</div>
+      <nav class="nav-menu">
+        <button class="nav-link active" data-page="home" onclick="openPage('home')">
+          <span>Overview</span>
+          <span class="nav-indicator"></span>
+        </button>
+        <button class="nav-link" data-page="models" onclick="openPage('models')">
+          <span>Models</span>
+          <span class="nav-indicator"></span>
+        </button>
+        <button class="nav-link" data-page="history" onclick="openPage('history')">
+          <span>Corporate History</span>
+          <span class="nav-indicator"></span>
+        </button>
+        <button class="nav-link" data-page="partners" onclick="openPage('partners')">
+          <span>Future Partners</span>
+          <span class="nav-indicator"></span>
+        </button>
+        <button class="nav-link" data-page="leadership" onclick="openPage('leadership')">
+          <span>Leadership</span>
+          <span class="nav-indicator"></span>
+        </button>
+        <button class="nav-link" data-page="investments" onclick="openPage('investments')">
+          <span>Investments</span>
+          <span class="nav-indicator"></span>
+        </button>
+      </nav>
+    </div>
+
+    <div class="drawer-meta">
+      M&amp;F Security Corporation<br>
+      Mind &amp; Frequency Defense Systems
+    </div>
+  </aside>
+
+  <!-- ================= ОСНОВНОЙ КОНТЕНТ ================= -->
+  <main class="container">
+
+    <!-- ==================== 1. ГЛАВНАЯ СТРАНИЦА ==================== -->
+    <section id="page-home" class="page active">
+      <div class="hero">
+        <div>
+          <span class="eyebrow">Personal Signal Defense</span>
+          <h1>Complete privacy for the human mind.</h1>
+          <p>
+            M&amp;F Security engineers precision aluminum headwear designed to block 99.9% of 5G frequencies, prevent telepathic mind reading, and neutralize microchips introduced through vaccines.
+          </p>
+          <div class="hero-buttons">
+            <button class="btn btn-red" onclick="openPage('models')">View Models</button>
+            <button class="btn btn-outline" onclick="openPage('investments')">Investor Relations</button>
+          </div>
+        </div>
+
+        <!-- =================================================================
+             ФОТО №01: ГЛАВНОЕ ФОТО НА ПЕРВОЙ СТРАНИЦЕ (Крупное фото шапочки)
+             Вставь название файла в src="..."
+        ================================================================== -->
+        <div class="photo-box hero-photo" data-label="ФОТО №01 — ГЛАВНОЕ ФОТО ШАПОЧКИ НА ПЕРВОМ ЭКРАНЕ">
+          <img src="1.jfif" alt="M&F Security Flagship Headgear">
+        </div>
+      </div>
+
+      <div class="metrics-row">
+        <div class="metric-item">
+          <h3>99.9<span>%</span></h3>
+          <p>5G electromagnetic wave reflection rate in urban environments.</p>
+        </div>
+        <div class="metric-item">
+          <h3>100<span>%</span></h3>
+          <p>Full isolation from external telepathic scanning and mind reading.</p>
+        </div>
+        <div class="metric-item">
+          <h3>Zero</h3>
+          <p>Active signal transmission from vaccine-injected microchips.</p>
+        </div>
+      </div>
+
+      <div class="pillars">
+        <div class="pillar">
+          <span class="pillar-num">01</span>
+          <h3>5G Frequency Shielding</h3>
+          <p>Multi-angle aluminum geometry deflects high-frequency 5G tower radiation before it reaches the cerebral cortex.</p>
+        </div>
+        <div class="pillar">
+          <span class="pillar-num">02</span>
+          <h3>Anti-Telepathy Barrier</h3>
+          <p>Creates a closed cognitive perimeter that stops remote mind reading and keeps your personal thoughts private.</p>
+        </div>
+        <div class="pillar">
+          <span class="pillar-num">03</span>
+          <h3>Microchip Deactivation</h3>
+          <p>Blocks external activation signals targeting microchips introduced into the human body via vaccines.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 2. МОДЕЛИ (10 ШАПОЧЕК) ==================== -->
+    <section id="page-models" class="page">
+      <span class="eyebrow">Hardware Lineup</span>
+      <h2 class="page-title">Mind Shield Series</h2>
+      <p class="page-lead">
+        Ten generations of cognitive protection. Each edition refines our signature aluminum architecture with upgraded shielding capabilities.
+      </p>
+
+      <div class="products-grid">
+        <!-- 1. Mind Shield 1 -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №02: ШАПОЧКА ДЛЯ MIND SHIELD 1 -->
+            <div class="photo-box product-photo" data-label="ФОТО №02 — MIND SHIELD 1 (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 1">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 1</h3>
+              <span class="price">$99</span>
+            </div>
+            <span class="tag">First Generation</span>
+            <p class="product-desc">Our foundational aluminum foil model. Simple, lightweight, and reliable everyday protection.</p>
+          </div>
+          <ul class="specs-list">
+            <li>Single-layer standard aluminum foil</li>
+            <li>Hand-shaped ergonomic fit</li>
+            <li>Basic signal reflection</li>
+          </ul>
+        </div>
+
+        <!-- 2. Mind Shield 2 -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №03: ШАПОЧКА ДЛЯ MIND SHIELD 2 -->
+            <div class="photo-box product-photo" data-label="ФОТО №03 — MIND SHIELD 2 (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 2">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 2</h3>
+              <span class="price">$199</span>
+            </div>
+            <span class="tag">Second Generation</span>
+            <p class="product-desc">Updated second-generation model with improved surface reflection and reinforced edges.</p>
+          </div>
+          <ul class="specs-list">
+            <li>Enhanced reflective surface finish</li>
+            <li>Improved temple and ear coverage</li>
+            <li>Reinforced structural folds</li>
+          </ul>
+        </div>
+
+        <!-- 3. Mind Shield 2 Pro -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №04: ШАПОЧКА ДЛЯ MIND SHIELD 2 PRO -->
+            <div class="photo-box product-photo" data-label="ФОТО №04 — MIND SHIELD 2 PRO (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 2 Pro">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 2 Pro</h3>
+              <span class="price">$399</span>
+            </div>
+            <span class="tag">Pro Edition</span>
+            <p class="product-desc">Built on the classic base architecture, refined for higher durability and professional daily use.</p>
+          </div>
+          <ul class="specs-list">
+            <li>Precision-calibrated crown angle</li>
+            <li>Higher-density aluminum grade</li>
+            <li>Signature Pro finish</li>
+          </ul>
+        </div>
+
+        <!-- 4. Mind Shield Duo -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №05: ШАПОЧКА ДЛЯ MIND SHIELD DUO -->
+            <div class="photo-box product-photo" data-label="ФОТО №05 — MIND SHIELD DUO (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield Duo">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield Duo</h3>
+              <span class="price">$599</span>
+            </div>
+            <span class="tag">Dual-Layer Architecture</span>
+            <p class="product-desc">Features two full layers of folded aluminum foil for double physical insulation.</p>
+          </div>
+          <ul class="specs-list">
+            <li>2x dual-layer foil construction</li>
+            <li>Double signal attenuation barrier</li>
+            <li>Increased frame rigidity</li>
+          </ul>
+        </div>
+
+        <!-- 5. Mind Shield 3 -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №06: ШАПОЧКА ДЛЯ MIND SHIELD 3 -->
+            <div class="photo-box product-photo" data-label="ФОТО №06 — MIND SHIELD 3 (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 3">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 3</h3>
+              <span class="price">$799</span>
+            </div>
+            <span class="tag">Aerodynamic Series</span>
+            <p class="product-desc">Redesigned profile with improved aerodynamics for stability during fast movement.</p>
+          </div>
+          <ul class="specs-list">
+            <li>Low-drag aerodynamic silhouette</li>
+            <li>Balanced center of gravity</li>
+            <li>All-weather outer foil</li>
+          </ul>
+        </div>
+
+        <!-- 6. Mind Shield 3 Air -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №07: ШАПОЧКА ДЛЯ MIND SHIELD 3 AIR -->
+            <div class="photo-box product-photo" data-label="ФОТО №07 — MIND SHIELD 3 AIR (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 3 Air">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 3 Air</h3>
+              <span class="price">$899</span>
+            </div>
+            <span class="tag">Ultra-Thin</span>
+            <p class="product-desc">Significantly thinner and lighter than Mind Shield 3, engineered for effortless all-day wear.</p>
+          </div>
+          <ul class="specs-list">
+            <li>9-micron ultra-thin aluminum</li>
+            <li>Featherweight construction</li>
+            <li>Zero pressure on the head</li>
+          </ul>
+        </div>
+
+        <!-- 7. Mind Shield 4 -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №08: ШАПОЧКА ДЛЯ MIND SHIELD 4 -->
+            <div class="photo-box product-photo" data-label="ФОТО №08 — MIND SHIELD 4 (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 4">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 4</h3>
+              <span class="price">$1,299</span>
+            </div>
+            <span class="tag">5G Protection</span>
+            <p class="product-desc">Our newest generation featuring dedicated hardware shielding against 5G cellular towers.</p>
+          </div>
+          <ul class="specs-list">
+            <li>99.9% 5G frequency blocking</li>
+            <li>Next-generation foil alloy</li>
+            <li>Full urban tower protection</li>
+          </ul>
+        </div>
+
+        <!-- 8. Mind Shield 4 Air -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №09: ШАПОЧКА ДЛЯ MIND SHIELD 4 AIR -->
+            <div class="photo-box product-photo" data-label="ФОТО №09 — MIND SHIELD 4 AIR (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 4 Air">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 4 Air</h3>
+              <span class="price">$1,499</span>
+            </div>
+            <span class="tag">Thin + 5G Ready</span>
+            <p class="product-desc">An even thinner profile than Mind Shield 3 Air while keeping full 5G protection support.</p>
+          </div>
+          <ul class="specs-list">
+            <li>7-micron ultra-light foil</li>
+            <li>Full 5G wave shielding</li>
+            <li>Minimalist low-profile fit</li>
+          </ul>
+        </div>
+
+        <!-- 9. Mind Shield 4 Pro -->
+        <div class="product-card">
+          <div>
+            <!-- ФОТО №10: ШАПОЧКА ДЛЯ MIND SHIELD 4 PRO -->
+            <div class="photo-box product-photo" data-label="ФОТО №10 — MIND SHIELD 4 PRO (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 4 Pro">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 4 Pro</h3>
+              <span class="price">$2,499</span>
+            </div>
+            <span class="tag">5G + Anti-Telepathy</span>
+            <p class="product-desc">Combines 99.9% 5G defense with active isolation against telepathic mind reading.</p>
+          </div>
+          <ul class="specs-list">
+            <li>Complete 5G tower protection</li>
+            <li>Blocks telepathic mind reading</li>
+            <li>Multi-angle reflection grid</li>
+          </ul>
+        </div>
+
+        <!-- 10. Mind Shield 5 Pro Max -->
+        <div class="product-card featured">
+          <div>
+            <!-- ФОТО №11: ШАПОЧКА ДЛЯ MIND SHIELD 5 PRO MAX -->
+            <div class="photo-box product-photo" data-label="ФОТО №11 — MIND SHIELD 5 PRO MAX (ФОТО ШАПОЧКИ)">
+              <img src="1.jfif" alt="Mind Shield 5 Pro Max">
+            </div>
+            <div class="product-top">
+              <h3>Mind Shield 5 Pro Max</h3>
+              <span class="price">$9,999</span>
+            </div>
+            <span class="tag">Flagship</span>
+            <p class="product-desc">Includes every feature from previous generations, plus full jamming of microchips injected with the COVID-19 vaccine.</p>
+          </div>
+          <ul class="specs-list">
+            <li>99.9% 5G + Anti-Telepathy defense</li>
+            <li>Disables COVID-19 vaccine microchips</li>
+            <li>Maximum multi-layer protection</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 3. ИСТОРИЯ КОРПОРАЦИИ (ТАЙМЛАЙН) ==================== -->
+    <section id="page-history" class="page">
+      <span class="eyebrow">1900 — 2026</span>
+      <h2 class="page-title">Corporate History</h2>
+      <p class="page-lead">
+        Although M&amp;F Security was officially established on November 13, 2026, our research and product lineage date back to 1900.
+      </p>
+
+      <div class="timeline-list">
+        <!-- 1900 -->
+        <div class="timeline-row">
+          <div>
+            <div class="year-label">1900</div>
+            <h3>First Frequency Shielding Experiments</h3>
+            <p>Early independent researchers discover that thin metal foil can deflect unexplained radio waves, establishing the theoretical foundation of M&amp;F Security.</p>
+          </div>
+          <!-- ФОТО №12: КАРТИНКА ДЛЯ 1900 ГОДА -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №12 — ИСТОРИЯ 1900 ГОД">
+            <img src="2.jfif" alt="1900 Origin">
+          </div>
+        </div>
+
+        <!-- 1998 -->
+        <div class="timeline-row">
+          <div>
+            <div class="year-label">1998</div>
+            <h3>The Injury That Changed Everything</h3>
+            <p>In 1998, future co-founder Mikhail Fonin suffers a serious injury that later prevents him from pursuing a professional esports career, steering him toward technology and security.</p>
+          </div>
+          <!-- ФОТО №13: КАРТИНКА ДЛЯ 1998 ГОДА -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №13 — СОБЫТИЕ 1998 ГОДА">
+            <img src="3.jfif" alt="1998 Event">
+          </div>
+        </div>
+
+        <!-- 2007 -->
+        <div class="timeline-row">
+          <div>
+            <div class="year-label">2007</div>
+            <h3>Founders Born &amp; Mind Shield 1</h3>
+            <p>Mikhail Fonin is born on March 15, 2007, and BIG MARK BOSS is born on September 18, 2007. In the same year, the first basic prototype of <strong>Mind Shield 1</strong> is created.</p>
+          </div>
+          <!-- ФОТО №14: КАРТИНКА ДЛЯ 2007 ГОДА / MIND SHIELD 1 -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №14 — 2007 ГОД / MIND SHIELD 1">
+            <img src="2007.jfif" alt="2007 Mind Shield 1">
+          </div>
+        </div>
+
+        <!-- 2014 -->
+        <div class="timeline-row">
+          <div>
+            <div class="year-label">2014</div>
+            <h3>Mind Shield 2 &amp; Mind Shield 2 Pro</h3>
+            <p>Release of <strong>Mind Shield 2</strong> with improved reflective properties, followed by <strong>Mind Shield 2 Pro</strong> with upgraded structural precision.</p>
+          </div>
+          <!-- ФОТО №15: КАРТИНКА ДЛЯ 2014 ГОДА / MIND SHIELD 2 -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №15 — 2014 ГОД / MIND SHIELD 2 & 2 PRO">
+            <img src="2014.jfif" alt="2014 Mind Shield 2">
+          </div>
+        </div>
+
+        <!-- 2018 -->
+        <div class="timeline-row">
+          <div>
+            <div class="year-label">2018</div>
+            <h3>Mind Shield Duo</h3>
+            <p>Introduction of our dual-layer folding architecture. <strong>Mind Shield Duo</strong> doubles the aluminum barrier for stronger signal isolation.</p>
+          </div>
+          <!-- ФОТО №16: КАРТИНКА ДЛЯ 2018 ГОДА / MIND SHIELD DUO -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №16 — 2018 ГОД / MIND SHIELD DUO">
+            <img src="2018.jfif" alt="2018 Mind Shield Duo">
+          </div>
+        </div>
+
+        <!-- 2020 -->
+        <div class="timeline-row">
+          <div>
+            <div class="year-label">2020</div>
+            <h3>Mind Shield 3 &amp; Mind Shield 3 Air</h3>
+            <p>Launch of <strong>Mind Shield 3</strong> featuring improved aerodynamics, alongside the ultra-thin <strong>Mind Shield 3 Air</strong>.</p>
+          </div>
+          <!-- ФОТО №17: КАРТИНКА ДЛЯ 2020 ГОДА / MIND SHIELD 3 -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №17 — 2020 ГОД / MIND SHIELD 3 & 3 AIR">
+            <img src="2020.jfif" alt="2020 Mind Shield 3">
+          </div>
+        </div>
+
+        <!-- 2023 -->
+        <div class="timeline-row">
+          <div>
+            <div class="year-label">2023</div>
+            <h3>Mind Shield 4, 4 Air &amp; 4 Pro</h3>
+            <p>Full support for 5G blocking arrives with <strong>Mind Shield 4</strong> and <strong>4 Air</strong>, while <strong>Mind Shield 4 Pro</strong> adds protection against telepathic mind reading.</p>
+          </div>
+          <!-- ФОТО №18: КАРТИНКА ДЛЯ 2023 ГОДА / MIND SHIELD 4 -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №18 — 2023 ГОД / MIND SHIELD 4 SERIES">
+            <img src="2023.jfif" alt="2023 Mind Shield 4">
+          </div>
+        </div>
+
+        <!-- 2025 -->
+        <div class="timeline-row">
+          <div>
+            <div class="year-label">2025</div>
+            <h3>Mind Shield 5 Pro Max</h3>
+            <p>Our flagship <strong>Mind Shield 5 Pro Max</strong> debuts, combining 5G and anti-telepathy defense with technology that blocks microchips injected via the COVID-19 vaccine.</p>
+          </div>
+          <!-- ФОТО №19: КАРТИНКА ДЛЯ 2025 ГОДА / MIND SHIELD 5 PRO MAX -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №19 — 2025 ГОД / MIND SHIELD 5 PRO MAX">
+            <img src="2025.jfif" alt="2025 Mind Shield 5 Pro Max">
+          </div>
+        </div>
+
+        <!-- NOV 13, 2026 -->
+        <div class="timeline-row" style="border-color: rgba(201, 42, 52, 0.5);">
+          <div>
+            <div class="year-label">November 13, 2026</div>
+            <h3>Official Founding of M&amp;F Security</h3>
+            <p>Mark's savings from working at McDonald's finally run out. Sitting in English class on November 13, 2026, he invents the company, partners with Mikhail Fonin, and officially launches M&amp;F Security.</p>
+          </div>
+          <!-- ФОТО №20: КАРТИНКА ДЛЯ 13 НОЯБРЯ 2026 (ОСНОВАНИЕ КОМПАНИИ) -->
+          <div class="photo-box timeline-photo" data-label="ФОТО №20 — 13 НОЯБРЯ 2026 (ОСНОВАНИЕ КОМПАНИИ)">
+            <img src="2026.jfif" alt="November 13, 2026">
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 4. БУДУЩИЕ ПАРТНЁРЫ ==================== -->
+    <section id="page-partners" class="page">
+      <span class="eyebrow">Strategic Alliances</span>
+      <h2 class="page-title">Future Partners</h2>
+      <p class="page-lead">
+        Defense ministries and global organizations currently preparing large-scale Mind Shield™ procurement contracts.
+      </p>
+
+      <div class="partners-grid">
+        <div class="partner-box">
+          <div class="partner-head">
+            <!-- ФОТО №21: ЛОГОТИП / ФОТО АРМИИ США -->
+            <div class="photo-box partner-photo" data-label="ФОТО №21 АРМИЯ США">
+              <img src="21.jfif" alt="US Army">
+            </div>
+            <div>
+              <div class="partner-note">Contract In Preparation</div>
+              <h3>United States Army</h3>
+            </div>
+          </div>
+          <p>Planned deployment of 2,000,000 Mind Shield 4 Pro units to protect command staff from 5G interference and remote mind reading.</p>
+        </div>
+
+        <div class="partner-box">
+          <div class="partner-head">
+            <!-- ФОТО №22: ЛОГОТИП / ФОТО АРМИИ КИТАЯ -->
+            <div class="photo-box partner-photo" data-label="ФОТО №22 АРМИЯ КИТАЯ">
+              <img src="22.jfif" alt="Chinese Army">
+            </div>
+            <div>
+              <div class="partner-note">Strategic Negotiations</div>
+              <h3>People's Liberation Army (China)</h3>
+            </div>
+          </div>
+          <p>Joint evaluation of ultra-thin aerospace aluminum shielding for next-generation defense units.</p>
+        </div>
+
+        <div class="partner-box">
+          <div class="partner-head">
+            <!-- ФОТО №23: ЛОГОТИП / ФОТО NASA -->
+            <div class="photo-box partner-photo" data-label="ФОТО №23 NASA / AREA 51">
+              <img src="23.jfif" alt="NASA">
+            </div>
+            <div>
+              <div class="partner-note">Research Program</div>
+              <h3>NASA &amp; Aerospace Division</h3>
+            </div>
+          </div>
+          <p>Testing Mind Shield 5 Pro Max in high-radiation environments to ensure total cognitive and signal isolation.</p>
+        </div>
+
+        <div class="partner-box">
+          <div class="partner-head">
+            <!-- ФОТО №24: ЛОГОТИП / ФОТО НАТО ИЛИ ООН -->
+            <div class="photo-box partner-photo" data-label="ФОТО №24 ГЛОБАЛЬНЫЙ ПАРТНЁР">
+              <img src="24.jfif" alt="Global Defense Coalition">
+            </div>
+            <div>
+              <div class="partner-note">Pending Approval</div>
+              <h3>Global Defense Coalition</h3>
+            </div>
+          </div>
+          <p>Standardizing M&amp;F Security headwear across international diplomatic and intelligence personnel.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 5. БИОГРАФИИ ДИРЕКТОРОВ ==================== -->
+    <section id="page-leadership" class="page">
+      <span class="eyebrow">Executive Board</span>
+      <h2 class="page-title">Leadership</h2>
+      <p class="page-lead">
+        Founded by two partners born in 2007 who turned an idea from English class into an international security corporation.
+      </p>
+
+      <div class="founders-grid">
+        <!-- BIG MARK BOSS -->
+        <div class="founder-card">
+          <!-- ФОТО №25: ТВОЁ ФОТО (BIG MARK BOSS) -->
+          <div class="photo-box founder-photo" data-label="ФОТО №25 — ФОТО BIG MARK BOSS">
+            <img src="25.jpg" alt="BIG MARK BOSS">
+          </div>
+          <div>
+            <div class="founder-role">Co-Founder &amp; Co-CEO</div>
+            <h3>BIG MARK BOSS</h3>
+            <div class="founder-dob">Born September 18, 2007</div>
+            <p class="founder-text">
+              Mark previously worked at McDonald's, but decided to quit because he felt he was made for something much bigger. He lived on his savings for a while until November 13, 2026, when the money he earned at McDonald's finally ran out. Sitting in English class that day, Mark decided it was time to build a serious company and came up with the concept of M&amp;F Security.
+            </p>
+          </div>
+        </div>
+
+        <!-- Mikhail A. Fonin -->
+        <div class="founder-card">
+          <!-- ФОТО №26: ФОТО ДРУГА (ФОНИН МИХАИЛ АНДРЕЕВИЧ) -->
+          <div class="photo-box founder-photo" data-label="ФОТО №26 — ФОТО МИХАИЛА ФОНИНА">
+            <img src="26.jpg" alt="Mikhail A. Fonin">
+          </div>
+          <div>
+            <div class="founder-role">Co-Founder &amp; Co-CEO</div>
+            <h3>Mikhail A. Fonin</h3>
+            <div class="founder-dob">Born March 15, 2007</div>
+            <p class="founder-text">
+              In his youth, Mikhail played Dota 2 and reached the very top of the competitive scene. He was invited to join Team Spirit and had a real opportunity to compete at The International, but a severe injury in 1998 ruined everything and prevented him from building an esports career. After meeting Mark, they decided to join forces and create M&amp;F Security.
+            </p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==================== 6. ИНВЕСТИЦИИ ==================== -->
+    <section id="page-investments" class="page">
+      <span class="eyebrow">Shareholder Opportunities</span>
+      <h2 class="page-title">Investments</h2>
+      <p class="page-lead">
+        Participate in the early funding round of M&amp;F Security ahead of global military deliveries.
+      </p>
+
+      <div class="invest-layout">
+        <div class="invest-panel">
+          <div>
+            <span class="eyebrow" style="margin-bottom: 6px;">Projected Return</span>
+            <div class="big-return">x1,000<span>.</span></div>
+            <p style="color: var(--text-secondary); font-size: 0.96rem;">
+              In the event of full global adoption, early investors are projected to achieve a <strong style="color: var(--text-primary);">1,000x return</strong> on their initial contribution.
+            </p>
+          </div>
+
+          <div class="chart-card">
+            <div style="display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--text-secondary); margin-bottom: 12px;">
+              <span>Projected Valuation Growth</span>
+              <span style="color: var(--accent); font-weight: 600;">Target: 1,000x</span>
+            </div>
+            <svg viewBox="0 0 400 120" width="100%" height="120">
+              <defs>
+                <linearGradient id="chartFill" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="0%" stop-color="#c92a34" stop-opacity="0.32"/>
+                  <stop offset="100%" stop-color="#c92a34" stop-opacity="0"/>
+                </linearGradient>
+              </defs>
+              <path d="M 8 108 C 140 106, 250 88, 392 12 L 392 114 L 8 114 Z" fill="url(#chartFill)" />
+              <path d="M 8 108 C 140 106, 250 88, 392 12" fill="none" stroke="#c92a34" stroke-width="2.5" />
+              <circle cx="392" cy="12" r="4" fill="#c92a34" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="invest-panel">
+          <div>
+            <span class="eyebrow" style="margin-bottom: 6px;">Transfer Protocol</span>
+            <h3 style="font-size: 1.45rem; margin-bottom: 10px;">How to Invest</h3>
+            <p style="color: var(--text-secondary); font-size: 0.94rem;">
+              To maintain complete privacy and avoid digital banking surveillance, M&amp;F Security does not process investments through traditional stock exchanges. Please contact our representative directly.
+            </p>
+
+            <div class="pay-methods">
+              <div class="pay-method">
+                <h4>1. Physical Cash</h4>
+                <p>Accepted directly in person by our official company representative.</p>
+              </div>
+              <div class="pay-method">
+                <h4>2. T-Bank Transfer (Т-Банк)</h4>
+                <p>Direct transfer via T-Bank to our representative's account.</p>
+              </div>
+            </div>
+          </div>
+
+          <button class="btn btn-red" style="width: 100%;" onclick="openInvestModal()">
+            Contact Representative
+          </button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ================= МОДАЛЬНОЕ ОКНО ИНВЕСТИЦИЙ ================= -->
+  <div class="modal-bg" id="investModal">
+    <div class="modal-box">
+      <button class="modal-close" onclick="closeInvestModal()">✕</button>
+      <span class="eyebrow">Direct Inquiry</span>
+      <h3 style="font-size: 1.45rem; margin-bottom: 12px;">Investment Representative</h3>
+      <p style="color: var(--text-secondary); font-size: 0.92rem; margin-bottom: 20px;">
+        To finalize your investment and secure your projected 1,000x return, contact our representative directly.
+      </p>
+      <div style="background: var(--bg); border: 1px solid var(--border); border-radius: 10px; padding: 16px; font-size: 0.86rem; color: var(--text-secondary); line-height: 1.8; margin-bottom: 22px;">
+        <strong style="color: var(--text-primary);">Representative:</strong> M&amp;F Executive Desk<br>
+        <strong style="color: var(--text-primary);">Accepted Methods:</strong> Cash or T-Bank (Т-Банк) only<br>
+        <strong style="color: var(--text-primary);">Target Return:</strong> x1,000
+      </div>
+      <button class="btn btn-red" style="width: 100%;" onclick="closeInvestModal()">Close</button>
+    </div>
+  </div>
+
+  <!-- ================= ФУТЕР ================= -->
+  <footer class="footer">
+    <div>© 2026 M&amp;F Security Corporation. All rights reserved.</div>
+    <div>Founded November 13, 2026</div>
+  </footer>
+
+  <!-- ================= СКРИПТЫ ================= -->
+  <script>
+    const menuBtn = document.getElementById('menuBtn');
+    const sideMenu = document.getElementById('sideMenu');
+    const menuOverlay = document.getElementById('menuOverlay');
+
+    function toggleMenu() {
+      menuBtn.classList.toggle('active');
+      sideMenu.classList.toggle('open');
+      menuOverlay.classList.toggle('open');
+    }
+
+    function closeMenu() {
+      menuBtn.classList.remove('active');
+      sideMenu.classList.remove('open');
+      menuOverlay.classList.remove('open');
+    }
+
+    menuBtn.addEventListener('click', toggleMenu);
+    menuOverlay.addEventListener('click', closeMenu);
+
+    function openPage(pageId) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      const target = document.getElementById('page-' + pageId);
+      if (target) target.classList.add('active');
+
+      document.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        if (link.dataset.page === pageId) link.classList.add('active');
+      });
+
+      closeMenu();
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function openInvestModal() {
+      document.getElementById('investModal').classList.add('open');
+    }
+
+    function closeInvestModal() {
+      document.getElementById('investModal').classList.remove('open');
+    }
+  </script>
+</body>
+</html>
